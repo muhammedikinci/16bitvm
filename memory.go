@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Memory []uint8
 
 func NewMemory(size int) Memory {
@@ -11,7 +13,7 @@ func (m Memory) Get8(address uint16) uint8 {
 }
 
 func (m Memory) Get16(address uint16) uint16 {
-	return uint16(m[address]) | uint16(m[address+1])<<8
+	return uint16(m[address+1]) | uint16(m[address])<<8
 }
 
 func (m Memory) Set8(address uint16, value uint8) {
@@ -19,6 +21,15 @@ func (m Memory) Set8(address uint16, value uint8) {
 }
 
 func (m Memory) Set16(address uint16, value uint16) {
-	m[address] = uint8(value & 0xFF)
-	m[address+1] = uint8((value >> 8) & 0xFF)
+	m[address+1] = uint8(value & 0xFF)
+	m[address] = uint8((value >> 8) & 0xFF)
+}
+
+func (m Memory) PrintAt(address uint16) {
+	for i := 0; i < 8; i++ {
+		val := m.Get8(address + uint16(i))
+		fmt.Printf("0x%02X ", val)
+	}
+
+	fmt.Print("\n")
 }

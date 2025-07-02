@@ -10,13 +10,8 @@ type CPU struct {
 	registers map[string]Register
 }
 
-type Register struct {
-	address uint8
-	value   uint16
-}
-
 func NewCPU(memory Memory) *CPU {
-	registers := newRegisterMap()
+	registers := NewRegisterMap()
 
 	return &CPU{
 		memory:    memory,
@@ -55,6 +50,18 @@ func (c *CPU) SetRegisterValue(name string, value uint16) error {
 	return nil
 }
 
+func (c *CPU) SetRegisterValueByAddress(address uint8, value uint16) error {
+	for name, reg := range c.registers {
+		if address == reg.address {
+			reg.value = value
+			c.registers[name] = reg
+			return nil
+		}
+	}
+
+	return errors.New("register could not found")
+}
+
 func (c *CPU) Fetch() (uint8, error) {
 	reg, err := c.GetRegister("ip")
 	if err != nil {
@@ -62,6 +69,8 @@ func (c *CPU) Fetch() (uint8, error) {
 	}
 
 	instruction := c.memory.Get8(reg.value)
+
+	fmt.Printf("fetched 0x%02X\n", instruction)
 
 	err = c.SetRegisterValue("ip", reg.value+1)
 	if err != nil {
@@ -79,6 +88,8 @@ func (c *CPU) Fetch16() (uint16, error) {
 
 	instruction := c.memory.Get16(reg.value)
 
+	fmt.Printf("fetched 0x%04X\n", instruction)
+
 	err = c.SetRegisterValue("ip", reg.value+2)
 	if err != nil {
 		return 0, err
@@ -89,34 +100,102 @@ func (c *CPU) Fetch16() (uint16, error) {
 
 func (c *CPU) Execute(instruction uint8) {
 	switch instruction {
-	// move literal to r1
-	case 0x10:
+	case MOV_LIT_REG:
 		literal, err := c.Fetch16()
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		err = c.SetRegisterValue("r1", literal)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-	// move literal to r2
-	case 0x11:
-		literal, err := c.Fetch16()
+		regAddress, err := c.Fetch()
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		err = c.SetRegisterValue("r2", literal)
+		err = c.SetRegisterValueByAddress(regAddress, literal)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("register could not found by given address:", regAddress)
+			return
 		}
 
-	// add two register values
-	case 0x12:
+	case MOV_REG_REG:
+		fromRegAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		toRegAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		fromReg := c.GetRegisterByAddress(fromRegAddr)
+		if fromReg == nil {
+			fmt.Println("register could not found by given address:", fromRegAddr)
+			return
+		}
+
+		err = c.SetRegisterValueByAddress(toRegAddr, fromReg.value)
+		if err != nil {
+			fmt.Println("register could not found by given address:", toRegAddr)
+			return
+		}
+
+	case MOV_REG_MEM:
+		regAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		targetAddr, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		register := c.GetRegisterByAddress(regAddr)
+		if register == nil {
+			fmt.Println("register could not found by given address:", regAddr)
+			return
+		}
+
+		// val := m.Get8(address + uint16(i))
+		fmt.Printf("target 0x%04X\n", targetAddr)
+		fmt.Printf("val 0x%02X\n", register.value)
+
+		c.memory.Set16(targetAddr, register.value)
+
+	case MOV_MEM_REG:
+		memAddr, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		regAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		register := c.GetRegisterByAddress(regAddr)
+		if register == nil {
+			fmt.Println("register could not found by given address:", regAddr)
+			return
+		}
+
+		value := c.memory.Get16(memAddr)
+		err = c.SetRegisterValueByAddress(regAddr, value)
+		if err != nil {
+			fmt.Println("register could not found by given address:", regAddr)
+			return
+		}
+
+	case ADD_REG_REG:
 		regAddress1, err := c.Fetch()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -159,29 +238,4 @@ func (c *CPU) Step() {
 	}
 
 	c.Execute(instruction)
-}
-
-func newRegisterMap() map[string]Register {
-	registers := map[string]Register{
-		"ip":  {},
-		"acc": {},
-		"r1":  {},
-		"r2":  {},
-		// "r3":  {},
-		// "r4":  {},
-		// "r5":  {},
-		// "r6":  {},
-		// "r7":  {},
-		// "r8":  {},
-	}
-
-	order := []string{"ip", "acc", "r1", "r2"}
-
-	for i, key := range order {
-		reg := registers[key]
-		reg.address = uint8(i * 2)
-		registers[key] = reg
-	}
-
-	return registers
 }
