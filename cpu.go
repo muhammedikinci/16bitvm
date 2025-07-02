@@ -226,7 +226,32 @@ func (c *CPU) Execute(instruction uint8) {
 			return
 		}
 
-		return
+	case JMP_NOT_EQ:
+		checkValue, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		toAddress, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		reg, err := c.GetRegister("acc")
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		if reg.value != checkValue {
+			err = c.SetRegisterValue("ip", toAddress)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+		}
 	}
 }
 

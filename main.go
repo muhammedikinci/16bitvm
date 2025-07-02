@@ -14,13 +14,13 @@ func main() {
 	cpu := NewCPU(memory)
 
 	memory[0] = MOV_LIT_REG
-	memory[1] = 0x12
-	memory[2] = 0x34
+	memory[1] = 0x01
+	memory[2] = 0x00
 	memory[3] = R1
 
 	memory[4] = MOV_LIT_REG
-	memory[5] = 0xAB
-	memory[6] = 0xCD
+	memory[5] = 0x00
+	memory[6] = 0x01
 	memory[7] = R2
 
 	memory[8] = ADD_REG_REG
@@ -31,6 +31,12 @@ func main() {
 	memory[12] = ACC
 	memory[13] = 0x01
 	memory[14] = 0x00
+
+	memory[15] = JMP_NOT_EQ
+	memory[16] = 0x00
+	memory[17] = 0x03
+	memory[18] = 0x00
+	memory[19] = 0x00
 
 	reg, _ := cpu.GetRegister("ip")
 	memory.PrintAt(uint16(reg.value))
@@ -54,6 +60,11 @@ func main() {
 	memory.PrintAt(uint16(reg.value))
 	memory.PrintAt(0x0100)
 	fmt.Print("\n")
+
+	cpu.Step()
+	reg, _ = cpu.GetRegister("ip")
+	memory.PrintAt(uint16(reg.value))
+	memory.PrintAt(0x0100)
 
 	cpu.Step()
 	reg, _ = cpu.GetRegister("ip")
