@@ -15,13 +15,16 @@
 
 ## Opcodes
 
-| Opcode | Description          | Format                 |
-| ------ | -------------------- | ---------------------- |
-| 0x10   | Load literal into r1 | 0x10 [lit_lo] [lit_hi] |
-| 0x11   | Load literal into r2 | 0x11 [lit_lo] [lit_hi] |
-| 0x12   | Add r1 + r2 → acc    | 0x12 [r1_id] [r2_id]   |
+| Opcode | Mnemonic    | Description                     | Format                                              |
+| ------ | ----------- | ------------------------------- | --------------------------------------------------- |
+| 0x10   | MOV_LIT_REG | Move literal into register      | 0x10 [lit_lo] [lit_hi] [reg_id]                     |
+| 0x11   | MOV_REG_REG | Move value between registers    | 0x11 [src_reg_id] [dest_reg_id]                     |
+| 0x12   | MOV_REG_MEM | Move register value to memory   | 0x12 [reg_id] [addr_lo] [addr_hi]                   |
+| 0x13   | MOV_MEM_REG | Load memory value into register | 0x13 [addr_lo] [addr_hi] [reg_id]                   |
+| 0x14   | ADD_REG_REG | Add two registers → acc         | 0x14 [reg1_id] [reg2_id]                            |
+| 0x15   | JMP_NOT_EQ  | Jump if reg != value            | 0x15 [reg_id] [val_lo] [val_hi] [addr_lo] [addr_hi] |
 
-All literal values are 16-bit and little-endian.
+All literal and address values are 16-bit, little-endian.
 
 ---
 
