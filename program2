@@ -1,4 +1,4 @@
-	memory[0] = MOV_LIT_REG
+	memory[0] = MOV_MEM_REG
 	memory[1] = 0x01
 	memory[2] = 0x00
 	memory[3] = R1

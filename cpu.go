@@ -19,6 +19,15 @@ func NewCPU(memory Memory) *CPU {
 	}
 }
 
+func (c *CPU) PrintRegisters() {
+	fmt.Printf("//registers//\n")
+	for _, key := range RegisterOrder {
+		reg := c.registers[key]
+		fmt.Printf("%s 0x%04X \n", reg.name, reg.value)
+	}
+	fmt.Printf("\\\\registers\\\\\n")
+}
+
 func (c *CPU) GetRegisterByAddress(address uint8) *Register {
 	for _, reg := range c.registers {
 		if address == reg.address {

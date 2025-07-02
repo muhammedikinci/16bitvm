@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
 
 const (
 	IP  = 0
@@ -13,7 +17,7 @@ func main() {
 	memory := NewMemory(256 * 256)
 	cpu := NewCPU(memory)
 
-	memory[0] = MOV_LIT_REG
+	memory[0] = MOV_MEM_REG
 	memory[1] = 0x01
 	memory[2] = 0x00
 	memory[3] = R1
@@ -43,31 +47,15 @@ func main() {
 	memory.PrintAt(0x0100)
 	fmt.Print("\n")
 
-	cpu.Step()
-	reg, _ = cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value))
-	memory.PrintAt(0x0100)
-	fmt.Print("\n")
+	for {
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	cpu.Step()
-	reg, _ = cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value))
-	memory.PrintAt(0x0100)
-	fmt.Print("\n")
+		cpu.Step()
 
-	cpu.Step()
-	reg, _ = cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value))
-	memory.PrintAt(0x0100)
-	fmt.Print("\n")
-
-	cpu.Step()
-	reg, _ = cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value))
-	memory.PrintAt(0x0100)
-
-	cpu.Step()
-	reg, _ = cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value))
-	memory.PrintAt(0x0100)
+		reg, _ = cpu.GetRegister("ip")
+		memory.PrintAt(uint16(reg.value))
+		memory.PrintAt(0x0100)
+		fmt.Print("\n")
+		cpu.PrintRegisters()
+	}
 }
