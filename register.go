@@ -6,7 +6,11 @@ type Register struct {
 	value   uint16
 }
 
-var RegisterOrder = []string{"ip", "acc", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"}
+var RegisterOrder = []string{
+	"ip", "acc", "r1", "r2", "r3",
+	"r4", "r5", "r6", "r7", "r8",
+	"sp", "fp",
+}
 
 func NewRegisterMap() map[string]Register {
 	registers := map[string]Register{
@@ -39,6 +43,12 @@ func NewRegisterMap() map[string]Register {
 		},
 		"r8": {
 			name: "r8",
+		},
+		"sp": {
+			name: "sp",
+		},
+		"fp": {
+			name: "fp",
 		},
 	}
 

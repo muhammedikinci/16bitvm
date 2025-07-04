@@ -27,8 +27,9 @@ func (m Memory) Set16(address uint16, value uint16) {
 
 func (m Memory) PrintAt(address uint16) {
 	for i := 0; i < 8; i++ {
-		val := m.Get8(address + uint16(i))
-		fmt.Printf("0x%02X ", val)
+		currentAddr := address + uint16(i)
+		val := m.Get8(currentAddr)
+		fmt.Printf("0x%04X: 0x%02X | ", currentAddr, val)
 	}
 
 	fmt.Print("\n")

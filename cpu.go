@@ -13,10 +13,15 @@ type CPU struct {
 func NewCPU(memory Memory) *CPU {
 	registers := NewRegisterMap()
 
-	return &CPU{
+	cpu := &CPU{
 		memory:    memory,
 		registers: registers,
 	}
+
+	_ = cpu.SetRegisterValue("sp", uint16(len(memory)-1-1))
+	_ = cpu.SetRegisterValue("fp", uint16(len(memory)-1-1))
+
+	return cpu
 }
 
 func (c *CPU) PrintRegisters() {
@@ -261,7 +266,72 @@ func (c *CPU) Execute(instruction uint8) {
 				return
 			}
 		}
+
+	case PSH_LIT:
+		value, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		c.Push(value)
+
+	case PSH_REG:
+		regAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		reg := c.GetRegisterByAddress(regAddr)
+
+		c.Push(reg.value)
+
+	case POP:
+		regAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		err = c.SetRegisterValueByAddress(regAddr, c.Pop())
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 	}
+}
+
+func (c *CPU) Push(value uint16) {
+	spAddr, err := c.GetRegister("sp")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	c.memory.Set16(spAddr.value, value)
+
+	err = c.SetRegisterValue("sp", spAddr.value-2)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+}
+
+func (c *CPU) Pop() uint16 {
+	reg, err := c.GetRegister("sp")
+	if err != nil {
+		fmt.Println(err.Error())
+		return 0
+	}
+
+	err = c.SetRegisterValue("sp", reg.value+2)
+	if err != nil {
+		fmt.Println(err.Error())
+		return 0
+	}
+
+	return c.memory.Get16(reg.value + 2)
 }
 
 func (c *CPU) Step() {
