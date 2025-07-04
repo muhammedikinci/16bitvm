@@ -10,4 +10,7 @@ const (
 	PSH_LIT     = 0x16
 	PSH_REG     = 0x17
 	POP         = 0x18
+	CAL_LIT     = 0x1A
+	CAL_REG     = 0x5E
+	RET         = 0x5F
 )

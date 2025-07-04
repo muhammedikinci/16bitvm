@@ -6,8 +6,9 @@ import (
 )
 
 type CPU struct {
-	memory    Memory
-	registers map[string]Register
+	memory         Memory
+	registers      map[string]Register
+	stackFrameSize uint16
 }
 
 func NewCPU(memory Memory) *CPU {
@@ -20,6 +21,8 @@ func NewCPU(memory Memory) *CPU {
 
 	_ = cpu.SetRegisterValue("sp", uint16(len(memory)-1-1))
 	_ = cpu.SetRegisterValue("fp", uint16(len(memory)-1-1))
+
+	cpu.stackFrameSize = 0
 
 	return cpu
 }
@@ -299,6 +302,42 @@ func (c *CPU) Execute(instruction uint8) {
 			fmt.Println(err.Error())
 			return
 		}
+
+	case CAL_LIT:
+		address, err := c.Fetch16()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		c.PushState()
+
+		err = c.SetRegisterValue("ip", address)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+	case CAL_REG:
+		regAddr, err := c.Fetch()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		c.PushState()
+
+		reg := c.GetRegisterByAddress(regAddr)
+
+		err = c.SetRegisterValue("ip", uint16(reg.address))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+	case RET:
+		c.PopState()
+
 	}
 }
 
@@ -332,6 +371,60 @@ func (c *CPU) Pop() uint16 {
 	}
 
 	return c.memory.Get16(reg.value + 2)
+}
+
+func (c *CPU) PushState() {
+	r1, _ := c.GetRegister("r1")
+	r2, _ := c.GetRegister("r2")
+	r3, _ := c.GetRegister("r3")
+	r4, _ := c.GetRegister("r4")
+	r5, _ := c.GetRegister("r5")
+	r6, _ := c.GetRegister("r6")
+	r7, _ := c.GetRegister("r7")
+	r8, _ := c.GetRegister("r8")
+	ip, _ := c.GetRegister("ip")
+
+	c.Push(r1.value)
+	c.Push(r2.value)
+	c.Push(r3.value)
+	c.Push(r4.value)
+	c.Push(r5.value)
+	c.Push(r6.value)
+	c.Push(r7.value)
+	c.Push(r8.value)
+	c.Push(ip.value)
+	c.Push(c.stackFrameSize + 2)
+
+	sp, _ := c.GetRegister("sp")
+
+	_ = c.SetRegisterValue("fp", sp.value)
+	c.stackFrameSize = 0
+}
+
+func (c *CPU) PopState() {
+	fp, _ := c.GetRegister("fp")
+	_ = c.SetRegisterValue("sp", fp.value)
+
+	c.stackFrameSize = c.Pop()
+
+	frameSize := c.stackFrameSize
+
+	c.SetRegisterValue("ip", c.Pop())
+	c.SetRegisterValue("r8", c.Pop())
+	c.SetRegisterValue("r7", c.Pop())
+	c.SetRegisterValue("r6", c.Pop())
+	c.SetRegisterValue("r5", c.Pop())
+	c.SetRegisterValue("r4", c.Pop())
+	c.SetRegisterValue("r3", c.Pop())
+	c.SetRegisterValue("r2", c.Pop())
+	c.SetRegisterValue("r1", c.Pop())
+
+	args := int(c.Pop())
+	for i := 0; i < args; i++ {
+		c.Pop()
+	}
+
+	c.SetRegisterValue("fp", uint16(fp.address)+frameSize)
 }
 
 func (c *CPU) Step() {
