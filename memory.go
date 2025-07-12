@@ -2,6 +2,13 @@ package main
 
 import "fmt"
 
+type IMemory interface {
+	Get16(address uint16) uint16
+	Get8(address uint16) uint8
+	Set16(address, data uint16)
+	Set8(address uint16, data uint8)
+}
+
 type Memory []uint8
 
 func NewMemory(size int) Memory {

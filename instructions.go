@@ -13,4 +13,5 @@ const (
 	CAL_LIT     = 0x1A
 	CAL_REG     = 0x5E
 	RET         = 0x5F
+	HLT         = 0xFF
 )

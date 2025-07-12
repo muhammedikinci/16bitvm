@@ -1,11 +1,5 @@
 package main
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-)
-
 const (
 	IP  = 0
 	ACC = 2
@@ -23,83 +17,48 @@ const (
 
 func main() {
 	memory := NewMemory(256 * 256)
-	cpu := NewCPU(memory)
+	memoryMapper := NewMemoryMapper()
+	screenDevice := ScreenDevice{}
 
-	subroutineAddress := 0x3000
+	memoryMapper.Map(Region{
+		Device: memory,
+		Start:  0x0000,
+		End:    0xFFFF,
+		Remap:  false,
+	})
 
-	memory[0] = PSH_LIT
-	memory[1] = 0x33
-	memory[2] = 0x33
+	memoryMapper.Map(Region{
+		Device: screenDevice,
+		Start:  0x3000,
+		End:    0x30FF,
+		Remap:  true,
+	})
 
-	memory[3] = PSH_LIT
-	memory[4] = 0x22
-	memory[5] = 0x22
+	cpu := NewCPU(memoryMapper)
 
-	memory[6] = PSH_LIT
-	memory[7] = 0x11
-	memory[8] = 0x11
+	writeCharToScreen := func(char, command, pos uint8, i int) int {
+		memory[i] = MOV_LIT_REG
+		memory[i+1] = command
+		memory[i+2] = char
+		memory[i+3] = R1
 
-	memory[9] = MOV_LIT_REG
-	memory[10] = 0x12
-	memory[11] = 0x34
-	memory[12] = R1
+		memory[i+4] = MOV_REG_MEM
+		memory[i+5] = R1
+		memory[i+6] = 0x30
+		memory[i+7] = pos
 
-	memory[13] = MOV_LIT_REG
-	memory[14] = 0x56
-	memory[15] = 0x78
-	memory[16] = R4
-
-	memory[17] = PSH_LIT
-	memory[18] = 0x00
-	memory[19] = 0x00
-
-	memory[20] = CAL_LIT
-	memory[21] = uint8((subroutineAddress & 0xFF00) >> 8)
-	memory[22] = uint8((subroutineAddress & 0x00FF))
-
-	memory[23] = PSH_LIT
-	memory[24] = 0x44
-	memory[25] = 0x44
-
-	memory[subroutineAddress] = PSH_LIT
-	memory[subroutineAddress+1] = 0x01
-	memory[subroutineAddress+2] = 0x02
-
-	memory[subroutineAddress+3] = PSH_LIT
-	memory[subroutineAddress+4] = 0x03
-	memory[subroutineAddress+5] = 0x04
-
-	memory[subroutineAddress+6] = PSH_LIT
-	memory[subroutineAddress+7] = 0x05
-	memory[subroutineAddress+8] = 0x06
-
-	memory[subroutineAddress+9] = MOV_LIT_REG
-	memory[subroutineAddress+10] = 0x07
-	memory[subroutineAddress+11] = 0x08
-	memory[subroutineAddress+12] = R1
-
-	memory[subroutineAddress+13] = MOV_LIT_REG
-	memory[subroutineAddress+14] = 0x09
-	memory[subroutineAddress+15] = 0x0A
-	memory[subroutineAddress+16] = R8
-
-	memory[subroutineAddress+17] = RET
-
-	reg, _ := cpu.GetRegister("ip")
-	memory.PrintAt(uint16(reg.value), 8)
-	memory.PrintAt(0xFFFF-1-42, 44)
-	fmt.Print("\n")
-
-	for {
-		fmt.Println("press enter for next step")
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-
-		cpu.Step()
-
-		reg, _ = cpu.GetRegister("ip")
-		memory.PrintAt(uint16(reg.value), 8)
-		memory.PrintAt(0xFFFF-1-42, 44)
-		fmt.Print("\n")
-		cpu.PrintRegisters()
+		return i + 8
 	}
+
+	insIndex := 0
+
+	insIndex = writeCharToScreen(uint8(' '), 0xFF, 0, insIndex)
+
+	for i := 0; i <= 0xFF; i++ {
+		insIndex = writeCharToScreen(uint8('*'), 0x00, uint8(i), insIndex)
+	}
+
+	memory[insIndex] = HLT
+
+	cpu.Run()
 }

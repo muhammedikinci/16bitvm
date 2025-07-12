@@ -6,12 +6,12 @@ import (
 )
 
 type CPU struct {
-	memory         Memory
+	memory         IMemory
 	registers      map[string]Register
 	stackFrameSize uint16
 }
 
-func NewCPU(memory Memory) *CPU {
+func NewCPU(memory IMemory) *CPU {
 	registers := NewRegisterMap()
 
 	cpu := &CPU{
@@ -19,8 +19,8 @@ func NewCPU(memory Memory) *CPU {
 		registers: registers,
 	}
 
-	_ = cpu.SetRegisterValue("sp", uint16(len(memory)-1-1))
-	_ = cpu.SetRegisterValue("fp", uint16(len(memory)-1-1))
+	_ = cpu.SetRegisterValue("sp", 0xFFFF-1)
+	_ = cpu.SetRegisterValue("fp", 0xFFFF-1)
 
 	cpu.stackFrameSize = 0
 
@@ -87,7 +87,7 @@ func (c *CPU) Fetch() (uint8, error) {
 
 	instruction := c.memory.Get8(reg.value)
 
-	fmt.Printf("fetched 0x%02X\n", instruction)
+	// fmt.Printf("fetched 0x%02X\n", instruction)
 
 	err = c.SetRegisterValue("ip", reg.value+1)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *CPU) Fetch16() (uint16, error) {
 
 	instruction := c.memory.Get16(reg.value)
 
-	fmt.Printf("fetched 0x%04X\n", instruction)
+	// fmt.Printf("fetched 0x%04X\n", instruction)
 
 	err = c.SetRegisterValue("ip", reg.value+2)
 	if err != nil {
@@ -181,8 +181,8 @@ func (c *CPU) Execute(instruction uint8) {
 		}
 
 		// val := m.Get8(address + uint16(i))
-		fmt.Printf("target 0x%04X\n", targetAddr)
-		fmt.Printf("val 0x%02X\n", register.value)
+		// fmt.Printf("target 0x%04X\n", targetAddr)
+		// fmt.Printf("val 0x%02X\n", register.value)
 
 		c.memory.Set16(targetAddr, register.value)
 
@@ -338,6 +338,9 @@ func (c *CPU) Execute(instruction uint8) {
 	case RET:
 		c.PopState()
 
+	case HLT:
+		return
+
 	}
 }
 
@@ -427,12 +430,21 @@ func (c *CPU) PopState() {
 	c.SetRegisterValue("fp", uint16(fp.address)+frameSize)
 }
 
-func (c *CPU) Step() {
+func (c *CPU) Step() bool {
 	instruction, err := c.Fetch()
 	if err != nil {
 		fmt.Println(err.Error())
-		return
+		return true
 	}
 
 	c.Execute(instruction)
+
+	return instruction == HLT
+}
+
+func (c *CPU) Run() {
+	isHalted := c.Step()
+	if !isHalted {
+		c.Run()
+	}
 }
